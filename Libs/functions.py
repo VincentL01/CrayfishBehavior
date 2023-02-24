@@ -89,8 +89,12 @@ def load_df(input_df):
         # Check if CF1 have rows with NaN
         if CF.isnull().values.any():
             print(f"CF{input_num} has NaN")
-            # print out which location has NaN
-            print(CF[CF.isnull().any(axis=1)])
+            
+            # # print out which location has NaN
+            # print(CF[CF.isnull().any(axis=1)])
+
+            # fill it with previous value
+            CF = CF.fillna(method='ffill')
             raise ValueError("CF has NaN")
             sys.exit()
         else:
