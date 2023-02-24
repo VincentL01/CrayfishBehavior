@@ -1,1 +1,24 @@
-{"EC event counts": "times", "avg distance": "cm", "closest distance": "cm", "furthest distance": "cm", "EC percentage": "%", "Total EC time": "s", "total distance": "cm", "avg speed": "cm/s", "freeze time percentage": "%", "swimming time percentage": "%", "rapid movements time percentage": "%", "avg distance to center": "cm", "interactions percentage": "%", "interaction events percentage": "%", "longest duration": "s", "fighting event counts": "times", "fighting time in frames": "frames", "fighting time in seconds": "s", "fighting time percentage": "%", "longest fighting time in seconds": "s", "chasing duration percentage": "%", "longest chasing event": "s"}
+{
+    "EC event counts": "times",
+    "avg distance": "cm",
+    "closest distance": "cm",
+    "furthest distance": "cm",
+    "EC percentage": "%",
+    "total EC time": "s",
+    "total distance": "cm",
+    "avg speed": "cm/s",
+    "freeze time percentage": "%",
+    "swimming time percentage": "%",
+    "rapid movements time percentage": "%",
+    "avg distance to center": "cm",
+    "interactions percentage": "%",
+    "interaction events percentage": "%",
+    "longest duration": "s",
+    "fighting event counts": "times",
+    "fighting time in frames": "frames",
+    "fighting time in seconds": "s",
+    "fighting time percentage": "%",
+    "longest fighting time in seconds": "s",
+    "chasing duration percentage": "%",
+    "longest chasing event": "s"
+}

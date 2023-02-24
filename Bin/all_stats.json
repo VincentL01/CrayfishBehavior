@@ -1,0 +1,60 @@
+{
+    "pincer": [
+        "distance",
+        "EC",
+        "EC events",
+        "EC event counts",
+        "avg distance",
+        "closest distance",
+        "furthest distance",
+        "EC percentage",
+        "total EC time"
+    ],
+    "movement": [
+        "distance",
+        "Speed",
+        "slow movements",
+        "medium movements",
+        "rapid movements",
+        "distance to center",
+        "total distance",
+        "avg speed",
+        "freeze time percentage",
+        "swimming time percentage",
+        "rapid movements time percentage",
+        "avg distance to center"
+    ],
+    "interaction": [
+        "distance",
+        "interactions",
+        "avg distance",
+        "closest distance",
+        "furthest distance",
+        "interactions percentage",
+        "interaction events",
+        "interaction events percentage",
+        "longest duration"
+    ],
+    "fighting": [
+        "left side distance",
+        "right side distance",
+        "avg distances",
+        "fighting",
+        "fighting events",
+        "fighting event counts",
+        "fighting time in frames",
+        "fighting time in seconds",
+        "fighting time percentage",
+        "longest fighting time in seconds"
+    ],
+    "chasing": [
+        "distance",
+        "chasing",
+        "chasing events",
+        "avg distance",
+        "closest distance",
+        "furthest distance",
+        "chasing duration percentage",
+        "longest chasing event"
+    ]
+}

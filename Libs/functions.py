@@ -4,6 +4,146 @@ import math
 import matplotlib.pyplot as plt
 import json
 import os
+from tkinter import Tk
+from tkinter import filedialog
+import sys
+
+# ROOT is the directory one level above the __file__ directory
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PARAMS_PATH = os.path.join(ROOT, 'Bin', 'parameters.json')
+UNITS_PATH = os.path.join(ROOT, 'Bin', 'units.json')
+STATS_PATH = os.path.join(ROOT, 'Bin', 'stats_needed.json')
+ALL_STATS_PATH = os.path.join(ROOT, 'Bin', 'all_stats.json')
+OUTPUT_PATH = os.path.join(ROOT, 'Output')
+
+def batch_output():
+    existed_dir = os.listdir(OUTPUT_PATH)
+    while True:
+        batch_num = 1
+        output_dir = 'Batch_' + str(batch_num)
+        if output_dir not in existed_dir:
+            break
+        else:
+            batch_num += 1
+    output_dir = os.path.join(OUTPUT_PATH, output_dir)
+    os.mkdir(output_dir)
+    return output_dir
+
+def select_excel(root_path = None):
+    if root_path == None:
+        root_path = os.getcwd()
+    elif not os.path.isdir(root_path):
+        print(f"Directory {root_path} does not exist")
+        sys.exit()
+    root = Tk()
+    default_dir = os.path.join(root_path, 'Input')
+    filenames = filedialog.askopenfilenames(initialdir = default_dir, title = "Select files", filetypes = (("excel files","*.xlsx"),("all files","*.*")))
+    if len(filenames) == 0:
+        print('No file selected')
+        sys.exit()
+    if len(filenames) == 1:
+        filenames = filenames[0]
+    root.destroy()
+    return filenames
+
+def load_stats(stat_path = STATS_PATH):
+    with open(stat_path) as f:
+        stats = json.load(f)
+    return stats
+
+def load_units(unit_path = UNITS_PATH):
+    with open(unit_path) as f:
+        units = json.load(f)
+    return units
+
+def load_params(params_path = PARAMS_PATH):
+    with open(params_path) as f:
+        params = json.load(f)
+    # change value type of params from string to int or float
+    for key in params:
+        if '.' in params[key]:
+            params[key] = float(params[key])
+        else:
+            params[key] = int(params[key])
+    return params
+
+def load_df(input_df):
+    #get unique values of row index 0
+    row_0 = input_df.iloc[0].unique()
+    row_0  = row_0 [1:]
+    new_columns = []
+    for x in row_0:
+        new_columns.append(x+"_X")
+        new_columns.append(x+"_Y")
+        new_columns.append(x+"_likelihood")
+
+    def get_CF(input_df, input_num, col1, coln):
+        # Take the data of crawfish1 from df to a new df called CF1
+        CF = input_df.iloc[2:,col1:coln]
+        # Rename the columns
+        CF.columns = new_columns
+        # Remove columns with _likelihood
+        CF = CF.loc[:,~CF.columns.str.contains('_likelihood')]
+        # Take only 18001 rows
+        CF = CF.iloc[:18001]
+        # Check if CF1 have rows with NaN
+        if CF.isnull().values.any():
+            print(f"CF{input_num} has NaN")
+            # print out which location has NaN
+            print(CF[CF.isnull().any(axis=1)])
+            raise ValueError("CF has NaN")
+            sys.exit()
+        else:
+            print(f"CF{input_num} has no NaN")
+        # Reset Index
+        CF = CF.reset_index(drop=True)
+
+        # Change all values in CF1 and CF2 to float
+        CF = CF.astype(float)
+
+        return CF
+    
+    CF1 = get_CF(input_df, 1, 1, len(row_0)*3+1)
+    CF2 = get_CF(input_df, 2, len(row_0)*3+1, len(row_0)*6+1)
+
+    # # Take the data of crawfish1 from df to a new df called CF1
+    # CF1 = input_df.iloc[2:,1:len(row_0)*3+1]
+    # # Rename the columns
+    # CF1.columns = new_columns
+    # # Remove columns with _likelihood
+    # CF1 = CF1.loc[:,~CF1.columns.str.contains('_likelihood')]
+    # # Check if CF1 have rows with NaN
+    # if CF1.isnull().values.any():
+    #     print("CF1 has NaN")
+    #     raise ValueError("CF1 has NaN")
+    #     sys.exit()
+    # else:
+    #     print("CF1 has no NaN")
+    # # Reset Index
+    # CF1 = CF1.reset_index(drop=True)
+
+    # # Take the data of crawfish2 from df to a new df called CF2
+    # CF2 = input_df.iloc[2:,len(row_0)*3+1:]
+    # # Rename the columns
+    # CF2.columns = new_columns
+    # # Remove columns with _likelihood
+    # CF2 = CF2.loc[:,~CF2.columns.str.contains('_likelihood')]
+    # # Check if CF2 have rows with NaN
+    # if CF2.isnull().values.any():
+    #     print("CF2 has NaN")
+    #     raise ValueError("CF2 has NaN")
+    #     sys.exit()
+    # else:
+    #     print("CF2 has no NaN")
+    # # Reset Index
+    # CF2 = CF2.reset_index(drop=True)
+
+    # # Change all values in CF1 and CF2 to float
+    # CF1 = CF1.astype(float)
+    # CF2 = CF2.astype(float)
+
+
+    return CF1, CF2
 
 def cheliped_stat(input_df, params):
     output_dict = {}
@@ -57,7 +197,7 @@ def cheliped_stat(input_df, params):
 
     output_dict['EC percentage'] = np.sum(output_dict['EC'])/len(output_dict['EC'])*100
 
-    output_dict['Total EC time'] = int(np.sum(output_dict['EC'])/params['FPS'])   # in seconds
+    output_dict['total EC time'] = int(np.sum(output_dict['EC'])/params['FPS'])   # in seconds
 
     return output_dict
 
@@ -151,8 +291,14 @@ def interaction_stat(input_1, input_2, params):
             inter_cf['interaction events'][(start_point, end_point-1)] = end_point - start_point
 
     # get interaction events percentage of longest duration
-    longest_duration = max(inter_cf['interaction events'].values())
-    inter_cf['interaction events percentage'] = longest_duration/len(inter_cf['interactions'])*100
+    try:
+        longest_duration = max(inter_cf['interaction events'].values())
+    except ValueError:
+        longest_duration = 0
+    try:
+        inter_cf['interaction events percentage'] = longest_duration/len(inter_cf['interactions'])*100
+    except ZeroDivisionError:
+        inter_cf['interaction events percentage'] = 0
 
     # get longest_duration in seconds
     inter_cf['longest duration'] = longest_duration/params['FPS']
@@ -197,7 +343,11 @@ def fighting_stat(input_1, input_2, params):
     output_dict['fighting time in frames'] = np.sum(output_dict['fighting'])
     output_dict['fighting time in seconds'] = output_dict['fighting time in frames']/params['FPS']
     output_dict['fighting time percentage'] = np.sum(output_dict['fighting'])/len(output_dict['fighting'])*100
-    output_dict['longest fighting time in seconds'] = max(output_dict['fighting events'].values())/params['FPS']
+    try:
+        output_dict['longest fighting time in seconds'] = max(output_dict['fighting events'].values())/params['FPS']
+    except ValueError:
+        print('No fighting events found')
+        output_dict['longest fighting time in seconds'] = 0
 
     return output_dict
 
@@ -233,8 +383,11 @@ def chasing_stat(chaser, chased, params):
     output_dict['closest distance'] = np.min(output_dict['distance'])
     output_dict['furthest distance'] = np.max(output_dict['distance'])
     output_dict['chasing duration percentage'] = np.sum(output_dict['chasing'])/len(output_dict['chasing'])*100
-    output_dict['longest chasing event'] = max(output_dict['chasing events'].values())/params['FPS']
-
+    try:
+        output_dict['longest chasing event'] = max(output_dict['chasing events'].values())/params['FPS']
+    except:
+        print('No chasing event found')
+        output_dict['longest chasing event'] = 0
     return output_dict
 
 def draw_graph(name, dataframe1, dataframe2, params, target = 'CF1', width = 20, height = 8):
@@ -325,3 +478,132 @@ def draw_graph(name, dataframe1, dataframe2, params, target = 'CF1', width = 20,
 
     # plt.show()
     return data, x_label, y_label, title, plotParams
+
+# Make a function to uppercase the first letter of each word in a string
+def upper_first_letter(string):
+    return ' '.join([word[0].upper() + word[1:] for word in string.split()])
+
+
+
+class Analyzer():
+    def __init__ (self, excel_paths):
+        # Load params, units
+        self.params = load_params()
+        with open(UNITS_PATH, 'r') as f:
+            self.units = json.load(f)
+
+        # Define file_nums, tasks, targets and excel_name_dict
+        self.file_nums = len(excel_paths)
+        self.tasks = ['pincer', 'movement', 'interaction', 'fighting', 'chasing']
+        self.tasks_need_extra_input = ['pincer', 'movement', 'chasing']
+        self.tasks_no_need_extra_input = [x for x in self.tasks if x not in self.tasks_need_extra_input]
+        self.targets = ['CF1', 'CF2']
+        self.stats_needed = load_stats()
+        self.excel_name_dict = {}
+        for i, excel_path in enumerate(excel_paths):
+            self.excel_name_dict[i] = os.path.basename(excel_path)
+
+        # Load excel file in to df and clean it, separate it into two df of two crayfishes
+        self.CF1s = [None] * self.file_nums
+        self.CF2s = [None] * self.file_nums
+        self.pincer_dict_CF1s = [None] * self.file_nums
+        self.pincer_dict_CF2s = [None] * self.file_nums
+        self.movement_dict_CF1s = [None] * self.file_nums
+        self.movement_dict_CF2s = [None] * self.file_nums
+        self.interaction_dicts = [None] * self.file_nums
+        self.fighting_dicts = [None] * self.file_nums
+        self.chasing_dict_CF1s = [None] * self.file_nums
+        self.chasing_dict_CF2s = [None] * self.file_nums
+        
+        for i, excel_path in enumerate(excel_paths):
+            print('Analyzing ' + self.excel_name_dict[i] + '...')
+            temp_df = pd.read_excel(excel_path)
+            self.CF1s[i], self.CF2s[i] = load_df(temp_df)
+            self.pincer_dict_CF1s[i] = cheliped_stat(self.CF1s[i], self.params)
+            self.pincer_dict_CF2s[i] = cheliped_stat(self.CF2s[i], self.params)
+            self.movement_dict_CF1s[i] = movement_stat(self.CF1s[i], self.params)
+            self.movement_dict_CF2s[i] = movement_stat(self.CF2s[i], self.params)
+            self.interaction_dicts[i] = interaction_stat(self.CF1s[i], self.CF2s[i], self.params)
+            self.fighting_dicts[i] = fighting_stat(self.CF1s[i], self.CF2s[i], self.params)
+            self.chasing_dict_CF1s[i] = chasing_stat(self.CF1s[i], self.CF2s[i], self.params)
+            self.chasing_dict_CF2s[i] = chasing_stat(self.CF2s[i], self.CF1s[i], self.params)
+    
+    def retrieve(self, file_num, task, target, stat):
+        assert task in self.tasks, f"task must be one of {self.tasks}"
+        assert target in self.targets, f"target must be one of {self.targets}"
+        assert file_num < self.file_nums, f"file_num must be within 0 and {self.file_nums - 1}"
+        
+        if task == 'pincer':
+            if target == 'CF1':
+                return self.pincer_dict_CF1s[file_num][stat]
+            else:
+                return self.pincer_dict_CF2s[file_num][stat]
+        elif task == 'movement':
+            if target == 'CF1':
+                return self.movement_dict_CF1s[file_num][stat]
+            else:
+                return self.movement_dict_CF2s[file_num][stat]
+        elif task == 'interaction':
+            return self.interaction_dicts[file_num][stat]
+        elif task == 'fighting':
+            return self.fighting_dicts[file_num][stat]
+        elif task == 'chasing':
+            if target == 'CF1':
+                return self.chasing_dict_CF1s[file_num][stat]
+            else:
+                return self.chasing_dict_CF2s[file_num][stat]
+
+    def group_df(self, task, target, stat):
+        # group the data of the same task and target into a dataframe
+        # columns = ['File num', 'Stat Value']
+        # sheet_name = f"{task} {target} {stat}"
+
+        output_df = pd.DataFrame(columns = ['File num', 'Stat Value', 'Units', 'Excel name'])
+        for i in range(self.file_nums):
+            output_df.loc[i] = [i, self.retrieve(i, task, target, stat), self.units[stat], self.excel_name_dict[i]]
+        return output_df
+
+    def export_excel(self):
+        ALL_DF = {}
+        # create empty dataframe for each task, target and stat
+        for task, stat_list in self.stats_needed.items():
+            if task not in self.tasks:
+                noti = f'{task} is not a valid task' + '\n' + f'VALID TASKS: {self.tasks}'
+            if task in self.tasks_need_extra_input:
+                for target in self.targets:
+                    for stat in stat_list:
+                        ALL_DF[(task, target, stat)] = self.group_df(task, target, stat)
+            else:
+                for stat in stat_list:
+                    target = 'CF1'
+                    ALL_DF[(task, stat)] = self.group_df(task, target, stat)
+        
+        # Export the dataframe in ALL_DF to different sheets in excel
+        output_dir = batch_output()
+        output_path = os.path.join(output_dir, 'summary.xlsx')
+        writer = pd.ExcelWriter(output_path, engine = 'xlsxwriter')
+        for key, summary_df in ALL_DF.items():
+            name = '-'.join(key)
+            # if name length is > 31, excel will not allow it
+            if len(name) > 31:
+                # abbrieviate the key[2] to 3 initials
+                stat_name = key[-1]
+                stat_name = [(i[0].upper()+i[1]) for i in stat_name.split(' ')]
+                stat_name = ''.join(stat_name)
+                sheet_name = '-'.join(key[:-1]) + '-' + stat_name
+            else:
+                sheet_name = name
+            summary_df.to_excel(writer, sheet_name = sheet_name, index = False)
+
+        writer.save()
+
+        # save the current parameters used (.json)
+        with open(os.path.join(output_dir, 'parameters.json'), 'w') as f:
+            json.dump(self.params, f, indent = 4)
+        
+        # save that stats needed (.json)
+        with open(os.path.join(output_dir, 'stats_needed.json'), 'w') as f:
+            json.dump(self.stats_needed, f, indent = 4)
+
+        return output_dir
+

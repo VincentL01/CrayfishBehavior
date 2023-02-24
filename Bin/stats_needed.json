@@ -1,0 +1,28 @@
+{
+    "pincer": [
+        "EC percentage",
+        "total EC time"
+    ],
+    "movement": [
+        "total distance",
+        "avg speed",
+        "freeze time percentage",
+        "swimming time percentage",
+        "rapid movements time percentage",
+        "avg distance to center"
+    ],
+    "interaction": [
+        "interactions percentage",
+        "interaction events percentage",
+        "longest duration"
+    ],
+    "fighting": [
+        "fighting time in seconds",
+        "fighting time percentage",
+        "longest fighting time in seconds"
+    ],
+    "chasing": [
+        "chasing duration percentage",
+        "longest chasing event"
+    ]
+}

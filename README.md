@@ -3,7 +3,7 @@
 
 
 ### CRAYFISH BEHAVIOUR ANALYSIS DATA PROCESSING TOOL ###
-### VERSION 1.8 ###
+### VERSION 2.0 ###
 ### 2023 Feb 24 ###
 ### Vincent Luong ###
 
@@ -18,6 +18,10 @@ INSTRUCTIONS:
     pip install -r requirements.txt
 5. Run main.py
     python main.py
+
+# CHANGELOG:
+2023/02/23: Bug Fixed
+2023/02/24: Added Batch Analysis
 
 
 

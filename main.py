@@ -17,91 +17,36 @@ ROOT = os.path.dirname(os.path.realpath(__file__))
 PARAMS_PATH = os.path.join(ROOT, 'Bin', 'parameters.json')
 UNITS_PATH = os.path.join(ROOT, 'Bin', 'units.json')
 
-#import parameters from parameters.json
-def load_params():
-    with open(PARAMS_PATH) as f:
-        params = json.load(f)
-    # change value type of params from string to int or float
-    for key in params:
-        if '.' in params[key]:
-            params[key] = float(params[key])
-        else:
-            params[key] = int(params[key])
-    return params
 
-params = load_params()
+
+params = load_params(params_path = PARAMS_PATH)
 tasks_required_extra_input = ['Pincers stat', 'Movement stat', 'Chasing stat']
 
 
 with open(UNITS_PATH) as f:
     units = json.load(f)
 
+def create_messagebox(title, message):
+    # pop-up a message to notify that the file has been exported
+    messagebox = tk.Toplevel(root)
+    messagebox.title('Exported')
+    # flexibly set the size of messagebox
+    messagebox.geometry('+{}+{}'.format(root.winfo_x() + 500, root.winfo_y() + 250))
+    messagebox.configure(bg='lightsteelblue2')
+    label = tk.Label(messagebox, text=message, font=('Arial', 16, 'bold'))
+    label.pack()
+    # change the messagebox size to fit the label
+    messagebox.update()
+    messagebox.after(3000, messagebox.destroy)
+
 def batch_process():
+    default_dir = os.path.join(ROOT, 'Input')
+    import_file_paths = filedialog.askopenfilenames(initialdir = default_dir, title = "Select files", filetypes = (("excel files","*.xlsx"),("all files","*.*")))
+    analyse = Analyzer(import_file_paths)
+    output_dir = analyse.export_excel()
 
-    #user input a list of excel files
-    default_directory = os.path.join(ROOT, 'Input')
-    import_file_paths = filedialog.askopenfilenames(initialdir = default_directory, title = "Select files", filetypes = (("Excel files", "*.xlsx"), ("all files", "*.*")))
-    
-    # If files are selected, notify
-    if import_file_paths:
-        notify_label.config(text='Multiple excel files are loaded, batch processing...')
-
-    for import_file_path in import_file_paths:
-        # Define output directory
-        file_name = os.path.basename(import_file_path).split('.')[0]
-        OUTPUT_DIR = os.path.join('Output', file_name)
-        if not os.path.exists(OUTPUT_DIR):
-            os.makedirs(OUTPUT_DIR)
-
-        # Load excel file to dataframe
-        df = pd.read_excel(import_file_path)
-
-        #get unique values of row index 0
-        row_0 = df.iloc[0].unique()
-        row_0  = row_0 [1:]
-        new_columns = []
-        for x in row_0:
-            new_columns.append(x+"_X")
-            new_columns.append(x+"_Y")
-            new_columns.append(x+"_likelihood")
-
-        # Take the data of crawfish1 from df to a new df called CF1
-        CF1 = df.iloc[2:,1:len(row_0)*3+1]
-        # Rename the columns
-        CF1.columns = new_columns
-        # Remove columns with _likelihood
-        CF1 = CF1.loc[:,~CF1.columns.str.contains('_likelihood')]
-        # Check if CF1 have rows with NaN
-        if CF1.isnull().values.any():
-            print("CF1 has NaN")
-            raise ValueError("CF1 has NaN")
-            sys.exit()
-        else:
-            print("CF1 has no NaN")
-        # Reset Index
-        CF1 = CF1.reset_index(drop=True)
-
-        # Take the data of crawfish2 from df to a new df called CF2
-        CF2 = df.iloc[2:,len(row_0)*3+1:]
-        # Rename the columns
-        CF2.columns = new_columns
-        # Remove columns with _likelihood
-        CF2 = CF2.loc[:,~CF2.columns.str.contains('_likelihood')]
-        # Check if CF2 have rows with NaN
-        if CF2.isnull().values.any():
-            print("CF2 has NaN")
-            raise ValueError("CF2 has NaN")
-            sys.exit()
-        else:
-            print("CF2 has no NaN")
-        # Reset Index
-        CF2 = CF2.reset_index(drop=True)
-
-        # Change all values in CF1 and CF2 to float
-        CF1 = CF1.astype(float)
-        CF2 = CF2.astype(float)
-
-
+    #create message box to notify user that the excel file is exported
+    create_messagebox('Exported', f'The summary stats are exported to {output_dir}')
 
 # when user click Import 
 # get excel path from dialog
@@ -122,50 +67,7 @@ def getExcel():
     # Load excel file to dataframe
     df = pd.read_excel(import_file_path)
 
-    #get unique values of row index 0
-    row_0 = df.iloc[0].unique()
-    row_0  = row_0 [1:]
-    new_columns = []
-    for x in row_0:
-        new_columns.append(x+"_X")
-        new_columns.append(x+"_Y")
-        new_columns.append(x+"_likelihood")
-
-    # Take the data of crawfish1 from df to a new df called CF1
-    CF1 = df.iloc[2:,1:len(row_0)*3+1]
-    # Rename the columns
-    CF1.columns = new_columns
-    # Remove columns with _likelihood
-    CF1 = CF1.loc[:,~CF1.columns.str.contains('_likelihood')]
-    # Check if CF1 have rows with NaN
-    if CF1.isnull().values.any():
-        print("CF1 has NaN")
-        raise ValueError("CF1 has NaN")
-        sys.exit()
-    else:
-        print("CF1 has no NaN")
-    # Reset Index
-    CF1 = CF1.reset_index(drop=True)
-
-    # Take the data of crawfish2 from df to a new df called CF2
-    CF2 = df.iloc[2:,len(row_0)*3+1:]
-    # Rename the columns
-    CF2.columns = new_columns
-    # Remove columns with _likelihood
-    CF2 = CF2.loc[:,~CF2.columns.str.contains('_likelihood')]
-    # Check if CF2 have rows with NaN
-    if CF2.isnull().values.any():
-        print("CF2 has NaN")
-        raise ValueError("CF2 has NaN")
-        sys.exit()
-    else:
-        print("CF2 has no NaN")
-    # Reset Index
-    CF2 = CF2.reset_index(drop=True)
-
-    # Change all values in CF1 and CF2 to float
-    CF1 = CF1.astype(float)
-    CF2 = CF2.astype(float)
+    CF1, CF2 = load_df(df)
 
     # change notify label text to "Excel file imported"
     notify_label.config(text='          Excel file is loaded          ')
@@ -219,16 +121,17 @@ def get_input():
     with open(PARAMS_PATH, 'w') as f:
         json.dump(params, f, indent=4)
 
-    params = load_params()
+    params = load_params(params_path = PARAMS_PATH)
 
 #####################################
 
 ###### BUTTON CONFIGURATION #######
 texts = {
-    'import' : 'Import Excel File',
-    'enter' : 'Accept inputs',
+    'import' : 'Import Single Excel File',
+    'accept' : 'Accept Inputs',
     'export' : 'Export Excel File',
     'display' : 'Display Results',
+    'batch': 'Import Several Files for Batch Processing',
     'draw' : 'Draw Graphs',
     'quit' : 'Quit'
 }
@@ -244,14 +147,14 @@ button_font = ('helvetica', 12, 'bold')
 ######## GUI CONFIGURATION ########
 # Select the file to be analyzed
 
-EXCEL_LOADED = False
+SINGLE_FILE = False
 INPUTED = False
 
 root = tk.Tk()
-root.title('Crayfish Locomotion Analysis')
+root.title('Crayfish Behavior Analysis')
 
 # make a canvas
-canvas = tk.Canvas(root, width=400, height=300, bg='lightsteelblue2', relief='raised')
+canvas = tk.Canvas(root, width=450, height=380, bg='lightsteelblue2', relief='raised')
 canvas.pack()
 
 # canvas size is fixed at 500x500
@@ -268,7 +171,7 @@ notify_label.grid(row=0, column=0, padx=10, pady=10)
 # Import button
 button_import = tk.Button(canvas, text=texts['import'], command=getExcel, 
                                 bg=button_bg, fg=button_fg, font=button_font)
-button_import.grid(row=1, column=0, padx=10, pady=10)
+button_import.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
 #############################################################
 # MAKE DROP DOWN LIST TO SELECT FROM TASKS (location = canvas) 
@@ -292,32 +195,38 @@ def create_text_line(location, position, *args):
         label.grid(row=position, column=col, sticky='w', padx=10, pady=10)
         col += 1
     
-
-# Make a function to uppercase the first letter of each word in a string
-def upper_first_letter(string):
-    return ' '.join([word[0].upper() + word[1:] for word in string.split()])
-
-def export_list_to_excel(list_to_export, file_name, sheet_name):
+def export_list_to_excel(file_name, *sheet_dfs, display = True):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
 
-    # Convert the dataframe to an XlsxWriter Excel object.
-    list_to_export.to_excel(writer, sheet_name=sheet_name)
+    sheet_names = {
+        1 : 'Distance in each frame',
+        2 : 'Summary data',
+        3 : 'Behavior frames and duration'
+    }
+
+    sheet_num = 0
+    for sheet_df in sheet_dfs:
+        sheet_num += 1
+        # write each sheet_df to a different sheet if sheet_df is not empty
+        if not sheet_df.empty:
+            sheet_df.to_excel(writer, sheet_name=sheet_names[sheet_num])
 
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
 
-    # pop-up a message to notify that the file has been exported
-    messagebox = tk.Toplevel(root)
-    messagebox.title('Exported')
-    # flexibly set the size of messagebox
-    messagebox.geometry('+{}+{}'.format(root.winfo_x() + 500, root.winfo_y() + 250))
-    messagebox.configure(bg='lightsteelblue2')
-    label = tk.Label(messagebox, text='The file has been exported to ' + file_name, font=('Arial', 16, 'bold'))
-    label.pack()
-    # change the messagebox size to fit the label
-    messagebox.update()
-    messagebox.after(2000, messagebox.destroy)
+    if display:
+        # pop-up a message to notify that the file has been exported
+        messagebox = tk.Toplevel(root)
+        messagebox.title('Exported')
+        # flexibly set the size of messagebox
+        messagebox.geometry('+{}+{}'.format(root.winfo_x() + 500, root.winfo_y() + 250))
+        messagebox.configure(bg='lightsteelblue2')
+        label = tk.Label(messagebox, text='The file has been exported to ' + file_name, font=('Arial', 16, 'bold'))
+        label.pack()
+        # change the messagebox size to fit the label
+        messagebox.update()
+        messagebox.after(2000, messagebox.destroy)
 
 def draw_graphs(name, dataframe1, dataframe2, params, target = 'CF1', width = 10, height = 4):
     print('Drawing graph for ' + name + '...')
@@ -339,35 +248,40 @@ def draw_graphs(name, dataframe1, dataframe2, params, target = 'CF1', width = 10
 
 def result_display(result_dict):
     position = 0
-    output_df = pd.DataFrame()
+    sheet1_df = pd.DataFrame() # SHEET 1 is for storing the distance/frames
+    sheet2_df = pd.DataFrame(columns = ['Type', 'Value', 'Units']) # SHEET 2 is for storing the summary data
+    sheet3_df = pd.DataFrame(columns = ['Start-End Frames', 'Duration']) # SHEET 3 is for storing the dictionary data if any
     for key, value in result_dict.items():
         position += 1
-        # if value is a list type, add it to output_df_1, column name is key
+        # if value is a list type, add it to sheet1_df_1, column name is key
         if type(value) == list:
             try:
-                output_df[key] = value
+                sheet1_df[key] = value
             except ValueError:
                 # when the length of values > length of index, add NaN to the end of existing columns
-                if len(value) > len(output_df.index):
-                    diff = len(value) - len(output_df.index)
+                if len(value) > len(sheet1_df.index):
+                    diff = len(value) - len(sheet1_df.index)
                     for i in range(diff):
-                        output_df = output_df.append(pd.Series(), ignore_index=True)
+                        sheet1_df = sheet1_df.append(pd.Series(), ignore_index=True)
                 # when the length of values < length of index, add NaN to the end of new column
-                elif len(value) < len(output_df.index):
-                    diff = len(output_df.index) - len(value)
+                elif len(value) < len(sheet1_df.index):
+                    diff = len(sheet1_df.index) - len(value)
                     for i in range(diff):
                         value.append(np.nan)
-                output_df[key] = value
-        # if value is a dictionary type, add it to output_df_2, column 1 is dictionary keys and column 2 is dictionary values
+                sheet1_df[key] = value
+        # if value is a dictionary type, add it to sheet3_df, column 1 is dictionary keys and column 2 is dictionary values
         elif type(value) == dict:
-            continue
+            for k, v in value.items():
+                sheet3_df = sheet3_df.append({'Start-End Frames': k, 'Duration': v}, ignore_index=True)
         # if value is a float type, round it to 4 decimal places, then convert to string
         else:
-            if type(value) == float:
+            if type(value) == float or type(value) == np.float64:
                 value = round(value, 4)
-            value = str(value)
             unit = units[key]
             key = upper_first_letter(key)
+            # add the result to sheet2_df using pd.concat
+            sheet2_df = pd.concat([sheet2_df, pd.DataFrame([[key, value, unit]], columns = ['Type', 'Value', 'Units'])], ignore_index=True)
+            value = str(value)
             # create a line to display the result
             create_text_line(stat_result_window, position, key, value, unit)
     # create a button to export the result to excel file
@@ -377,7 +291,7 @@ def result_display(result_dict):
     excel_name = excel_name.replace(' ', '_')
     excel_name = excel_name + '.xlsx'
     excel_path = os.path.join(OUTPUT_DIR, excel_name)
-    button_export = tk.Button(stat_result_window, text=texts['export'], command=lambda: export_list_to_excel(output_df, excel_path, 'Sheet1'))
+    button_export = tk.Button(stat_result_window, text=texts['export'], command=lambda: export_list_to_excel(excel_path, sheet1_df, sheet2_df, sheet3_df))
     button_export.grid(row=position+1, column=0, padx=10, pady=10)
 
     # create a button to draw graphs
@@ -467,9 +381,6 @@ confirm_button = tk.Button(canvas, text = "Confirm", command=confirm_task)
 confirm_button.grid(row=3, column=1, padx=2, pady=10)
 
 
-
-
-
 #############################################################
 
 # Create a new window with boxes to input parameters
@@ -515,9 +426,20 @@ chasing_threshold_widget = create_input_box('Chasing Threshold (pixel):', window
 
 
 # Enter button
-button_enter = tk.Button(canvas, text=texts['enter'], command=get_input,
+button_enter = tk.Button(canvas, text=texts['accept'], command=get_input,
                                 bg=button_bg, fg=button_fg, font=button_font)
 button_enter.grid(row=2, column=0, padx=10, pady=10)    
+
+# Create a guiding label, wraplength is the width of the label
+guide_text = 'If you do batch processing, only Change/Accept Input then click Batch Process'
+guide_label = tk.Label(canvas, text=guide_text, wraplength=200, font = ('Arial', 10))
+guide_label.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+
+# Batch button
+button_batch = tk.Button(canvas, text=texts['batch'], command=batch_process,
+                                bg=button_bg, fg=button_fg, font=button_font)
+# this button on row 6, take up 2 columns 0 and 1
+button_batch.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
 
 # Quit button
 button_quit = tk.Button(canvas, text=texts['quit'], command=root.destroy, 
