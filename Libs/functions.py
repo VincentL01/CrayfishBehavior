@@ -29,7 +29,7 @@ def batch_output():
     os.mkdir(output_dir)
     return output_dir
 
-def select_excel(root_path = None):
+def select_files(root_path = None):
     if root_path == None:
         root_path = os.getcwd()
     elif not os.path.isdir(root_path):
@@ -37,7 +37,10 @@ def select_excel(root_path = None):
         sys.exit()
     root = Tk()
     default_dir = os.path.join(root_path, 'Input')
-    filenames = filedialog.askopenfilenames(initialdir = default_dir, title = "Select files", filetypes = (("excel files","*.xlsx"),("all files","*.*")))
+    # filetypes are excel and csv, and all files
+    filetypes = [('Excel', '*.xlsx'), ('CSV', '*.csv'), ('All files', '*')]
+    # open file dialog
+    filenames = filedialog.askopenfilenames(initialdir = default_dir, title = "Select files", filetypes = filetypes)
     if len(filenames) == 0:
         print('No file selected')
         sys.exit()
@@ -68,6 +71,10 @@ def load_params(params_path = PARAMS_PATH):
     return params
 
 def load_df(input_df):
+    #if the first row first value is "scorer", then remove it
+    if 'scorer' in input_df.columns:
+        input_df.columns = input_df.iloc[0]
+        input_df = input_df.drop(0)
     #get unique values of row index 0
     row_0 = input_df.iloc[0].unique()
     row_0  = row_0 [1:]
@@ -89,14 +96,9 @@ def load_df(input_df):
         # Check if CF1 have rows with NaN
         if CF.isnull().values.any():
             print(f"CF{input_num} has NaN")
-            
-            # # print out which location has NaN
-            # print(CF[CF.isnull().any(axis=1)])
-
             # fill it with previous value
             CF = CF.fillna(method='ffill')
-            raise ValueError("CF has NaN")
-            sys.exit()
+            print(f'Filled NaN in CF{input_num} with previous value')
         else:
             print(f"CF{input_num} has no NaN")
         # Reset Index
@@ -490,22 +492,22 @@ def upper_first_letter(string):
 
 
 class Analyzer():
-    def __init__ (self, excel_paths):
+    def __init__ (self, data_paths):
         # Load params, units
         self.params = load_params()
         with open(UNITS_PATH, 'r') as f:
             self.units = json.load(f)
 
         # Define file_nums, tasks, targets and excel_name_dict
-        self.file_nums = len(excel_paths)
+        self.file_nums = len(data_paths)
         self.tasks = ['pincer', 'movement', 'interaction', 'fighting', 'chasing']
         self.tasks_need_extra_input = ['pincer', 'movement', 'chasing']
         self.tasks_no_need_extra_input = [x for x in self.tasks if x not in self.tasks_need_extra_input]
         self.targets = ['CF1', 'CF2']
         self.stats_needed = load_stats()
         self.excel_name_dict = {}
-        for i, excel_path in enumerate(excel_paths):
-            self.excel_name_dict[i] = os.path.basename(excel_path)
+        for i, data_path in enumerate(data_paths):
+            self.excel_name_dict[i] = os.path.basename(data_path)
 
         # Load excel file in to df and clean it, separate it into two df of two crayfishes
         self.CF1s = [None] * self.file_nums
@@ -519,9 +521,19 @@ class Analyzer():
         self.chasing_dict_CF1s = [None] * self.file_nums
         self.chasing_dict_CF2s = [None] * self.file_nums
         
-        for i, excel_path in enumerate(excel_paths):
+        for i, data_path in enumerate(data_paths):
             print('Analyzing ' + self.excel_name_dict[i] + '...')
-            temp_df = pd.read_excel(excel_path)
+            # if data_path is excel
+            if data_path.endswith('.xlsx'):
+                # check if excel file contains multiple sheets
+                if len(pd.ExcelFile(data_path).sheet_names) > 1:
+                    print('Warning: Excel file contains multiple sheets, only the first sheet will be analyzed.')
+                # if excel file has multiple sheets, select the first sheet, no matter what the name is
+                sheet_0_name = pd.ExcelFile(data_path).sheet_names[0]
+                temp_df = pd.read_excel(data_path, sheet_name=sheet_0_name)
+                # temp_df = pd.read_excel(data_path)
+            elif data_path.endswith('.csv'):
+                temp_df = pd.read_csv(data_path)
             self.CF1s[i], self.CF2s[i] = load_df(temp_df)
             self.pincer_dict_CF1s[i] = cheliped_stat(self.CF1s[i], self.params)
             self.pincer_dict_CF2s[i] = cheliped_stat(self.CF2s[i], self.params)

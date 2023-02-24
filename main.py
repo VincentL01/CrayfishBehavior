@@ -50,27 +50,37 @@ def batch_process():
 
 # when user click Import 
 # get excel path from dialog
-def getExcel():
+def getData():
     global CF1
     global CF2
     global OUTPUT_DIR
 
     default_directory = os.path.join(ROOT, 'Input')
-    import_file_path = filedialog.askopenfilename(initialdir = default_directory, title = "Select file", filetypes = (("Excel files", "*.xlsx"), ("all files", "*.*")))
+    filetypes = [('Excel', '*.xlsx'), ('CSV', '*.csv'), ('All files', '*')]
+    import_file_path = filedialog.askopenfilename(initialdir = default_directory, title = "Select file", filetypes = filetypes)
 
     # Define output directory
-    file_name = os.path.basename(import_file_path).split('.')[0]
+    file_name, file_type = os.path.basename(import_file_path).split('.')
     OUTPUT_DIR = os.path.join('Output', file_name)
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
     # Load excel file to dataframe
-    df = pd.read_excel(import_file_path)
+    if import_file_path.endswith('.xlsx'):
+        # check if excel file contains multiple sheets
+        if len(pd.ExcelFile(import_file_path).sheet_names) > 1:
+            print('Warning: Excel file contains multiple sheets, only the first sheet will be analyzed.')
+        # if excel file contains multiple sheets, select the first sheet, no matter its name is
+        sheet_0_name = pd.ExcelFile(import_file_path).sheet_names[0]
+        df = pd.read_excel(import_file_path, sheet_name=sheet_0_name)
+        # df = pd.read_excel(import_file_path)
+    elif import_file_path.endswith('.csv'):
+        df = pd.read_csv(import_file_path)
 
     CF1, CF2 = load_df(df)
 
     # change notify label text to "Excel file imported"
-    notify_label.config(text='          Excel file is loaded          ')
+    notify_label.config(text=f'       Data file (.{file_type}) is loaded          ')
     EXCEL_LOADED = True
 
 # when user clicks enter, get the values from the boxes
@@ -169,7 +179,7 @@ notify_label = tk.Label(canvas, text='Please select an excel file for analysis',
 notify_label.grid(row=0, column=0, padx=10, pady=10)
 
 # Import button
-button_import = tk.Button(canvas, text=texts['import'], command=getExcel, 
+button_import = tk.Button(canvas, text=texts['import'], command=getData, 
                                 bg=button_bg, fg=button_fg, font=button_font)
 button_import.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
@@ -262,7 +272,9 @@ def result_display(result_dict):
                 if len(value) > len(sheet1_df.index):
                     diff = len(value) - len(sheet1_df.index)
                     for i in range(diff):
-                        sheet1_df = sheet1_df.append(pd.Series(), ignore_index=True)
+                        # sheet1_df = sheet1_df.append(pd.Series(), ignore_index=True)
+                        # use pd.concat instead
+                        sheet1_df = pd.concat([sheet1_df, pd.DataFrame(columns = [key])], axis=1)
                 # when the length of values < length of index, add NaN to the end of new column
                 elif len(value) < len(sheet1_df.index):
                     diff = len(sheet1_df.index) - len(value)
@@ -272,7 +284,9 @@ def result_display(result_dict):
         # if value is a dictionary type, add it to sheet3_df, column 1 is dictionary keys and column 2 is dictionary values
         elif type(value) == dict:
             for k, v in value.items():
-                sheet3_df = sheet3_df.append({'Start-End Frames': k, 'Duration': v}, ignore_index=True)
+                # sheet3_df = sheet3_df.append({'Start-End Frames': k, 'Duration': v}, ignore_index=True)
+                # use pd.concat instead
+                sheet3_df = pd.concat([sheet3_df, pd.DataFrame([[k, v]], columns = ['Start-End Frames', 'Duration'])], ignore_index=True)
         # if value is a float type, round it to 4 decimal places, then convert to string
         else:
             if type(value) == float or type(value) == np.float64:
