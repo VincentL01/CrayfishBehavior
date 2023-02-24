@@ -1,0 +1,13 @@
+{
+    "CONVERSION_RATE": "14.3",
+    "CENTER_X": "327",
+    "CENTER_Y": "258",
+    "FPS": "30",
+    "DURATION": "600",
+    "EC_THRESHOLD": "3",
+    "SPEED_THRESHOLD_1": "1",
+    "SPEED_THRESHOLD_2": "5",
+    "INTERACTION_THRESHOLD": "3",
+    "FIGHTING_THRESHOLD": "3",
+    "CHASING_THRESHOLD": "3"
+}
