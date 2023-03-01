@@ -41,12 +41,20 @@ def create_messagebox(title, message):
 
 def batch_process():
     default_dir = os.path.join(ROOT, 'Input')
-    import_file_paths = filedialog.askopenfilenames(initialdir = default_dir, title = "Select files", filetypes = (("excel files","*.xlsx"),("all files","*.*")))
-    analyse = Analyzer(import_file_paths)
-    output_dir = analyse.export_excel()
+    import_file_paths = filedialog.askopenfilenames(initialdir = default_dir, title = "Select files", filetypes = (("all files","*.*"),("excel files","*.xlsx"),("csv files","*.csv")))
+    if import_file_paths:
+        analyse = Analyzer(import_file_paths)
+        try:
+            print('Trying to export to Output/Batch_*/summary.xlsx')
+            output_dir = analyse.export_excel()
+        except:
+            print('Error somewhere')
 
-    #create message box to notify user that the excel file is exported
-    create_messagebox('Exported', f'The summary stats are exported to {output_dir}')
+        #create message box to notify user that the excel file is exported
+        try:
+            create_messagebox('Exported', f'The summary stats are exported to {output_dir}')
+        except:
+            print('ERROR: Can not create message box')
 
 # when user click Import 
 # get excel path from dialog
@@ -56,7 +64,7 @@ def getData():
     global OUTPUT_DIR
 
     default_directory = os.path.join(ROOT, 'Input')
-    filetypes = [('Excel', '*.xlsx'), ('CSV', '*.csv'), ('All files', '*')]
+    filetypes = [ ('all files', '*'), ('excel files', '*.xlsx'), ('csv files', '*.csv')]
     import_file_path = filedialog.askopenfilename(initialdir = default_directory, title = "Select file", filetypes = filetypes)
 
     # Define output directory
@@ -272,15 +280,18 @@ def result_display(result_dict):
                 if len(value) > len(sheet1_df.index):
                     diff = len(value) - len(sheet1_df.index)
                     for i in range(diff):
-                        # sheet1_df = sheet1_df.append(pd.Series(), ignore_index=True)
-                        # use pd.concat instead
-                        sheet1_df = pd.concat([sheet1_df, pd.DataFrame(columns = [key])], axis=1)
+                        sheet1_df = sheet1_df.append(pd.Series(dtype=np.float64), ignore_index=True)
+                    print('Added {} blank index to sheet1_df to match length of {}'.format(diff, key))
                 # when the length of values < length of index, add NaN to the end of new column
                 elif len(value) < len(sheet1_df.index):
                     diff = len(sheet1_df.index) - len(value)
                     for i in range(diff):
                         value.append(np.nan)
-                sheet1_df[key] = value
+                    print('Added {} NaN values to value of {} to match length'.format(diff, key))
+                try:
+                    sheet1_df[key] = value
+                except ValueError:
+                    print('Error occurs at {}'.format(key))
         # if value is a dictionary type, add it to sheet3_df, column 1 is dictionary keys and column 2 is dictionary values
         elif type(value) == dict:
             for k, v in value.items():

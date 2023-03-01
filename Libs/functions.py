@@ -18,14 +18,16 @@ OUTPUT_PATH = os.path.join(ROOT, 'Output')
 
 def batch_output():
     existed_dir = os.listdir(OUTPUT_PATH)
+    batch_num = 1
     while True:
-        batch_num = 1
         output_dir = 'Batch_' + str(batch_num)
+        print('Trying to name to output dir as {}'.format(output_dir))
         if output_dir not in existed_dir:
             break
         else:
             batch_num += 1
     output_dir = os.path.join(OUTPUT_PATH, output_dir)
+    print('Output dir is {}'.format(output_dir))
     os.mkdir(output_dir)
     return output_dir
 
@@ -574,6 +576,8 @@ class Analyzer():
         # columns = ['File num', 'Stat Value']
         # sheet_name = f"{task} {target} {stat}"
 
+        print(f'Grouping data with task = {task}, target = {target}, stat = {stat}')
+
         output_df = pd.DataFrame(columns = ['File num', 'Stat Value', 'Units', 'Excel name'])
         for i in range(self.file_nums):
             output_df.loc[i] = [i, self.retrieve(i, task, target, stat), self.units[stat], self.excel_name_dict[i]]
@@ -597,7 +601,9 @@ class Analyzer():
         # Export the dataframe in ALL_DF to different sheets in excel
         output_dir = batch_output()
         output_path = os.path.join(output_dir, 'summary.xlsx')
-        writer = pd.ExcelWriter(output_path, engine = 'xlsxwriter')
+        engine = 'xlsxwriter'
+        writer = pd.ExcelWriter(output_path, engine = engine)
+        print(f'Writer initialized, engine = {engine}')
         for key, summary_df in ALL_DF.items():
             name = '-'.join(key)
             # if name length is > 31, excel will not allow it
@@ -609,9 +615,15 @@ class Analyzer():
                 sheet_name = '-'.join(key[:-1]) + '-' + stat_name
             else:
                 sheet_name = name
-            summary_df.to_excel(writer, sheet_name = sheet_name, index = False)
+            try:
+                print(f'Writing summary dataframe to sheet {sheet_name}')
+                summary_df.to_excel(writer, sheet_name = sheet_name, index = False)
+            except:
+                print(f'Error in exporting sheet {sheet_name}')
 
         writer.save()
+
+        print("Write to summary.xlsx finished")
 
         # save the current parameters used (.json)
         with open(os.path.join(output_dir, 'parameters.json'), 'w') as f:
