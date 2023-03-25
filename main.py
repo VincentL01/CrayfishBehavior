@@ -26,15 +26,23 @@ tasks_required_extra_input = ['Pincers stat', 'Movement stat', 'Chasing stat']
 with open(UNITS_PATH) as f:
     units = json.load(f)
 
-def create_messagebox(title, message):
+def open_dir(output_dir):
+    os.startfile(output_dir)
+
+def create_messagebox(title, output_dir):
+
+    message = f'The summary stats are exported to {output_dir}'
     # pop-up a message to notify that the file has been exported
     messagebox = tk.Toplevel(root)
-    messagebox.title('Exported')
+    messagebox.title(title)
     # flexibly set the size of messagebox
     messagebox.geometry('+{}+{}'.format(root.winfo_x() + 500, root.winfo_y() + 250))
-    messagebox.configure(bg='lightsteelblue2')
+    messagebox.configure(bg=background_color)
     label = tk.Label(messagebox, text=message, font=('Arial', 16, 'bold'))
-    label.pack()
+    label.grid(row=0, column=0, padx=10, pady=20)
+    go_button = tk.Button(messagebox, text='Go to Output directory', font=('Arial', 16, 'bold'), command=lambda: open_dir(output_dir))
+    go_button.grid(row=1, column=0, padx=10, pady=20)
+    go_button.configure(bg = 'dark green', fg = 'white')
     # change the messagebox size to fit the label
     messagebox.update()
     messagebox.after(3000, messagebox.destroy)
@@ -52,7 +60,7 @@ def batch_process():
 
         #create message box to notify user that the excel file is exported
         try:
-            create_messagebox('Exported', f'The summary stats are exported to {output_dir}')
+            create_messagebox('Exported', output_dir)
         except:
             print('ERROR: Can not create message box')
 
@@ -171,15 +179,17 @@ INPUTED = False
 root = tk.Tk()
 root.title('Crayfish Behavior Analysis')
 
+background_color = "white"
+
 # make a canvas
-canvas = tk.Canvas(root, width=450, height=380, bg='lightsteelblue2', relief='raised')
+canvas = tk.Canvas(root, width=450, height=380, bg=background_color, relief='raised')
 canvas.pack()
 
 # canvas size is fixed at 500x500
 canvas.grid_propagate(False)
 
 # create a frame
-frame = tk.Frame(canvas, bg='lightsteelblue2')
+frame = tk.Frame(canvas, bg=background_color)
 frame.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
 
 notify_font = ('Arial', 12, 'bold', 'italic')
@@ -239,7 +249,7 @@ def export_list_to_excel(file_name, *sheet_dfs, display = True):
         messagebox.title('Exported')
         # flexibly set the size of messagebox
         messagebox.geometry('+{}+{}'.format(root.winfo_x() + 500, root.winfo_y() + 250))
-        messagebox.configure(bg='lightsteelblue2')
+        messagebox.configure(bg=background_color)
         label = tk.Label(messagebox, text='The file has been exported to ' + file_name, font=('Arial', 16, 'bold'))
         label.pack()
         # change the messagebox size to fit the label
@@ -252,7 +262,7 @@ def draw_graphs(name, dataframe1, dataframe2, params, target = 'CF1', width = 10
     graph_window = tk.Toplevel(root)
     graph_window.title(name)
     graph_window.geometry('1000x500')
-    graph_window.configure(bg='lightsteelblue2')
+    graph_window.configure(bg=background_color)
 
     figure = plt.Figure(figsize=(width, height), dpi=100)
     ax = figure.add_subplot(111)
