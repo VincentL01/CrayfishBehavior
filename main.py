@@ -93,7 +93,10 @@ def getData():
     elif import_file_path.endswith('.csv'):
         df = pd.read_csv(import_file_path)
 
-    CF1, CF2 = load_df(df)
+    CF1, CF2 = load_df(df, params)
+
+    print('CF1 length: ', len(CF1))
+    print('CF2 length: ', len(CF2))
 
     # change notify label text to "Excel file imported"
     notify_label.config(text=f'       Data file (.{file_type}) is loaded          ')

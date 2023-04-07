@@ -72,19 +72,21 @@ def load_params(params_path = PARAMS_PATH):
             params[key] = int(params[key])
     return params
 
-def load_df(input_df):
+def load_df(input_df, params):
     #if the first row first value is "scorer", then remove it
     if 'scorer' in input_df.columns:
         input_df.columns = input_df.iloc[0]
         input_df = input_df.drop(0)
     #get unique values of row index 0
     row_0 = input_df.iloc[0].unique()
-    row_0  = row_0 [1:]
+    row_0 = row_0 [1:]
     new_columns = []
     for x in row_0:
         new_columns.append(x+"_X")
         new_columns.append(x+"_Y")
         new_columns.append(x+"_likelihood")
+
+    length = params['DURATION'] * params['FPS'] + 1
 
     def get_CF(input_df, input_num, col1, coln):
         # Take the data of crawfish1 from df to a new df called CF1
@@ -94,7 +96,7 @@ def load_df(input_df):
         # Remove columns with _likelihood
         CF = CF.loc[:,~CF.columns.str.contains('_likelihood')]
         # Take only 18001 rows
-        CF = CF.iloc[:18001]
+        CF = CF.iloc[:length+1]
         # Check if CF1 have rows with NaN
         if CF.isnull().values.any():
             print(f"CF{input_num} has NaN")
@@ -536,7 +538,7 @@ class Analyzer():
                 # temp_df = pd.read_excel(data_path)
             elif data_path.endswith('.csv'):
                 temp_df = pd.read_csv(data_path)
-            self.CF1s[i], self.CF2s[i] = load_df(temp_df)
+            self.CF1s[i], self.CF2s[i] = load_df(temp_df, self.params)
             self.pincer_dict_CF1s[i] = cheliped_stat(self.CF1s[i], self.params)
             self.pincer_dict_CF2s[i] = cheliped_stat(self.CF2s[i], self.params)
             self.movement_dict_CF1s[i] = movement_stat(self.CF1s[i], self.params)
