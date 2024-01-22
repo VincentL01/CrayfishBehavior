@@ -95,7 +95,7 @@ def load_df(input_df, params):
         CF.columns = new_columns
         # Remove columns with _likelihood
         CF = CF.loc[:,~CF.columns.str.contains('_likelihood')]
-        # Take only 18001 rows
+        # Take only params['DURATION'] * params['FPS'] + 1 rows
         CF = CF.iloc[:length+1]
         # Check if CF1 have rows with NaN
         if CF.isnull().values.any():
